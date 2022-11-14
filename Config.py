@@ -3,6 +3,7 @@ coefficients = []
 time = 1000
 delta = 1
 populations_count = 0
+populations = []
 
 
 def is_float(value):
@@ -29,6 +30,7 @@ def default_values(n):
             coefficients[j][i] = 0.0001
     time = 1000
     delta = 1
+    populations_from_matrix(param_values)
 
 
 def set_params(buf, buf1, t, d):
@@ -37,14 +39,16 @@ def set_params(buf, buf1, t, d):
     coefficients = buf1
     time = t
     delta = d
+    populations_from_matrix(param_values)
 
 
-# def planets_from_matrix(matrix):
-#     """Заполнение массива планет по параметрам матрицы"""
-#     global planets
-#     planets = []
-#     for i in range(planets_count):
-#         planets.append(Planet(*matrix[i]))
+def populations_from_matrix(matrix):
+    global populations
+    populations = []
+    for i in range(populations_count):
+        populations.append(Population(i, *matrix[i]))
+
+
 #
 #
 # def read_from_file(filename):
@@ -74,3 +78,30 @@ def set_params(buf, buf1, t, d):
 #         print(planets_count, time, time_step, file=file)
 #         for planet in planets:
 #             print(planet, file=file)
+
+class Population:
+    def __init__(self, id: int, n: int, alpha: float):
+        self.id = id
+        self.alpha = alpha
+        self.N = n
+        self.data = []
+
+    def __str__(self):
+        return f"{self.alpha} {self.N}"
+
+    def interaction(self, objs):
+        f = 0
+        for obj in objs:
+            if self == obj:
+                continue
+            f += coefficients[self.id][obj.id] * self.N * obj.N
+        self.N += self.N * self.alpha + f
+
+
+def get_max_N():
+    max = 0
+    for obj in populations:
+        buf = obj.N
+        if max < buf:
+            max = buf
+    return max

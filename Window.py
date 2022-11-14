@@ -1,4 +1,10 @@
 import tkinter.filedialog
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
+import Config
 from ChildWindows import *
 
 
@@ -6,11 +12,11 @@ class Window:
     def __init__(self, width, height, title):
         self.root = Tk()
         self.root.title(title)
-        self.root.geometry(f"{width}x{height}+100+75")
-        self.root.resizable(False, False)
+        self.root.geometry(f"+100+75")
+        # self.root.resizable(False, False)
         self.displayed_time = StringVar(value="0")
         self.displayed_count = StringVar(value="0.0")
-        self.button = None
+        self.button = self.fig = self.ax = self.canvas = None
 
     def run(self):
         self.draw()
@@ -19,15 +25,28 @@ class Window:
     def draw(self):
         self.draw_menu()
         frame = Frame(self.root)
+        frame.pack(side=LEFT, padx=10)
+        self.fig = plt.Figure(figsize=(7, 4))
+        self.ax = self.fig.add_subplot(111)
+        self.fig.subplots_adjust(left=0.06, right=0.975, bottom=0.08, top=0.95)
+        self.canvas = FigureCanvasTkAgg(self.fig, frame)
+        self.canvas.get_tk_widget().pack()
+        self.toolbar = NavigationToolbar2Tk(self.canvas, frame)
+        self.canvas._tkcanvas.pack()
+
+        frame = Frame(self.root)
         frame.pack(side=LEFT, anchor=N, padx=10)
         Label(frame, text="Текущее время (с)").pack(pady=(10, 0))
         Entry(frame, width=25, textvariable=self.displayed_time, state=DISABLED).pack()
         Label(frame, text="Общая энергия (Дж)").pack(pady=(10, 0))
         Entry(frame, width=25, textvariable=self.displayed_count, state=DISABLED).pack()
-        frame = Frame(self.root)
-        frame.pack(side=LEFT, padx=12)
-        self.button = Button(frame, width=20, height=10, text="Запуск модели", command=self.start_exec)
-        self.button.pack()
+        self.button = Button(frame, width=20, text="Запуск модели", command=self.start_exec)
+        self.button.pack(pady=(20, 0))
+
+        # frame = Frame(self.root)
+        # frame.pack(side=LEFT, padx=12)
+        # self.button = Button(frame, width=20, height=10, text="Запуск модели", command=self.start_exec)
+        # self.button.pack()
 
     def draw_menu(self):
         main_menu = Menu(self.root)
@@ -60,9 +79,28 @@ class Window:
 
     def start_exec(self):
         print('\nStarted execution...')
-        print(Config.planets_count)
-        for planet in Config.planets:
-            print(planet)
-        if len(Config.planets) == 0:
+        print(Config.populations_count)
+        for i, population in zip(range(Config.populations_count), Config.populations):
+            print(i, population)
+        if Config.populations_count == 0:
             tkinter.messagebox.showerror("Ошибка!", "Сначала необходимо создать систему")
             return
+        self.ax.cla()
+        self.ax.set_xlim([0, Config.time])
+        self.ax.set_ylim([0, 3*Config.get_max_N()])
+        lines = [self.ax.plot([], [])[0] for _ in range(Config.populations_count)]
+
+        def anim(frame):
+            xdata.append(frame)
+            for i, population in enumerate(Config.populations):
+                population.interaction(Config.populations)
+                ydata[i].append(population.N)
+                lines[i].set_data(xdata, ydata[i])
+            return lines
+
+        xdata = []
+        ydata = [[] for _ in range(Config.populations_count)]
+        x = np.arange(0, Config.time, Config.delta)
+        anim = animation.FuncAnimation(self.fig, func=anim, frames=x, interval=1,
+                                       blit=True, repeat=False)
+        self.canvas.draw()
