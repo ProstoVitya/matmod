@@ -29,7 +29,7 @@ def default_values(n):
             coefficients[i][j] = -0.0001
             coefficients[j][i] = 0.0001
     time = 1000
-    delta = 1
+    delta = 1.0
     populations_from_matrix(param_values)
 
 
@@ -85,17 +85,28 @@ class Population:
         self.alpha = alpha
         self.N = n
         self.data = []
+        self.inRedBook = False
 
     def __str__(self):
         return f"{self.alpha} {self.N}"
 
-    def interaction(self, objs):
+    def interaction(self, objs, delta):
         f = 0
+        if self.N < 50 and not self.inRedBook:
+            self.alpha *= 2
+            self.inRedBook = True
+            print(self.id, 'in a red book')
+        elif self.N > 50 and self.inRedBook:
+            self.alpha /= 2
+            self.inRedBook = False
+            print(self.id, 'quit a red book')
         for obj in objs:
             if self == obj:
                 continue
             f += coefficients[self.id][obj.id] * self.N * obj.N
-        self.N += self.N * self.alpha + f
+        self.N += delta * (self.N * self.alpha + f)
+        if self.N < 2:
+            self.N = 0
 
 
 def get_max_N():

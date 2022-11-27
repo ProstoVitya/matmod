@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-import Config
 from ChildWindows import *
 
 
@@ -38,7 +37,7 @@ class Window:
         frame.pack(side=LEFT, anchor=N, padx=10)
         Label(frame, text="Текущее время (с)").pack(pady=(10, 0))
         Entry(frame, width=25, textvariable=self.displayed_time, state=DISABLED).pack()
-        Label(frame, text="Общая энергия (Дж)").pack(pady=(10, 0))
+        Label(frame, text="Число особей (шт)").pack(pady=(10, 0))
         Entry(frame, width=25, textvariable=self.displayed_count, state=DISABLED).pack()
         self.button = Button(frame, width=20, text="Запуск модели", command=self.start_exec)
         self.button.pack(pady=(20, 0))
@@ -87,15 +86,20 @@ class Window:
             return
         self.ax.cla()
         self.ax.set_xlim([0, Config.time])
-        self.ax.set_ylim([0, 3*Config.get_max_N()])
+        self.ax.set_ylim([0, 3 * Config.get_max_N()])
         lines = [self.ax.plot([], [])[0] for _ in range(Config.populations_count)]
 
         def anim(frame):
             xdata.append(frame)
+            n=0
             for i, population in enumerate(Config.populations):
-                population.interaction(Config.populations)
+                population.interaction(Config.populations, Config.delta)
                 ydata[i].append(population.N)
                 lines[i].set_data(xdata, ydata[i])
+                n += population.N
+
+            self.displayed_time.set(str(frame))
+            self.displayed_count.set(str(n))
             return lines
 
         xdata = []
